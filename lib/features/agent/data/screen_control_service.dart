@@ -16,7 +16,6 @@ class ScreenControlService {
 
   /// Requests the user-grant for MediaProjection; triggers Android's
   /// "show screen content" consent flow.
-  @visibleForTesting
   static Future<String> beginCapture() async {
     try {
       final res = await _channel.invokeMethod<String>('beginCapture');
