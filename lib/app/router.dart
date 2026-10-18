@@ -16,6 +16,8 @@ import 'package:pocketstrike/features/settings/ui/memory_settings_screen.dart';
 import 'package:pocketstrike/features/settings/ui/model_params_screen.dart';
 import 'package:pocketstrike/features/settings/ui/provider_edit_screen.dart';
 import 'package:pocketstrike/features/settings/ui/providers_settings_screen.dart';
+import 'package:pocketstrike/features/settings/ui/root_settings_screen.dart';
+import 'package:pocketstrike/features/settings/ui/screen_control_settings_screen.dart';
 import 'package:pocketstrike/features/settings/ui/settings_screen.dart';
 import 'package:pocketstrike/features/gallery/ui/gallery_screen.dart';
 import 'package:pocketstrike/features/settings/ui/storage_settings_screen.dart';
@@ -41,6 +43,8 @@ abstract class AppRoutes {
   static const settingsHermes = '/settings/hermes';
   static const settingsTasks = '/settings/tasks';
   static const settingsAbout = '/settings/about';
+  static const settingsScreenControl = '/settings/screen-control';
+  static const settingsRoot = '/settings/root';
   static const agentRun = '/agent-run';
 }
 
@@ -136,6 +140,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.settingsAbout,
         builder: (context, state) => const AboutExportScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsScreenControl,
+        builder: (context, state) => const ScreenControlSettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsRoot,
+        builder: (context, state) => const RootSettingsScreen(),
       ),
       GoRoute(
         path: '${AppRoutes.agentRun}/:id',

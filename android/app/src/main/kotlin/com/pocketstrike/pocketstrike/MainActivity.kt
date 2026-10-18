@@ -1,7 +1,9 @@
 package com.pocketstrike.pocketstrike
 
 import android.content.ContentValues
+import android.content.Intent
 import android.media.MediaScannerConnection
+import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -14,9 +16,103 @@ import java.io.FileOutputStream
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.pocketstrike.app/gallery"
+    private val screenChannel = "com.pocketstrike.app/screen"
+    private val rootChannel = "com.pocketstrike.app/root"
+    private var pendingProjectionResult: (String) -> Unit = {}
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, screenChannel).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "beginCapture" -> {
+                    // Request MediaProjection consent from user via system UI.
+                    val mediaProjectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                    val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
+                    startActivityForResult(captureIntent, 9901)
+                    result.success("REQUEST_SENT")
+                }
+                "stopCapture" -> {
+                    stopService(Intent(this, ScreenControlService::class.java).apply {
+                        action = ScreenControlService.ACTION_STOP
+                    })
+                    result.success("STOPPED")
+                }
+                "getLiveFrame" -> {
+                    val path = ScreenControlService.lastSnapshotFileGlobal
+                    if (path != null && File(path).exists()) {
+                        result.success(path)
+                    } else {
+                        result.success(null)
+                    }
+                }
+                "injectClick" -> {
+                    val x = call.argument<Int>("x")
+                    val y = call.argument<Int>("y")
+                    if (x != null && y != null) {
+                        ShellExecutor.runShellCommand(context = applicationContext, cmd = "input tap $x $y")
+                        result.success("CLICKED $x,$y")
+                    } else {
+                        result.error("MISSING_ARGS", "x and y must be integers", null)
+                    }
+                }
+                "injectSwipe" -> {
+                    val x0 = call.argument<Int>("fromX")
+                    val y0 = call.argument<Int>("fromY")
+                    val x1 = call.argument<Int>("toX")
+                    val y1 = call.argument<Int>("toY")
+                    if (x0 != null && y0 != null && x1 != null && y1 != null) {
+                        ShellExecutor.runShellCommand(context = applicationContext, cmd = "input swipe $x0 $y0 $x1 $y1 300")
+                        result.success("SWIPED")
+                    } else {
+                        result.error("MISSING_ARGS", "fromX/fromY/toX/toY must be integers", null)
+                    }
+                }
+                "injectType" -> {
+                    val text = call.argument<String>("text")
+                    if (text != null) {
+                        ShellExecutor.runShellCommand(context = applicationContext, cmd = "input text '$text'")
+                        result.success("TYPED")
+                    } else {
+                        result.error("MISSING_ARGS", "text must be provided", null)
+                    }
+                }
+                "injectKey" -> {
+                    val keyCode = call.argument<Int>("keycode")
+                    if (keyCode != null) {
+                        ShellExecutor.runShellCommand(context = applicationContext, cmd = "input keyevent $keyCode")
+                        result.success("KEY_SENT")
+                    } else {
+                        result.error("MISSING_ARGS", "keycode must be an integer", null)
+                    }
+                }
+                "getScreenSize" -> {
+                    val dm = displayMetrics
+                    result.success(mapOf("width" to dm.widthPixels, "height" to dm.heightPixels, "dpi" to dm.densityDpi))
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, rootChannel).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isRooted" -> {
+                    val shell = ShellExecutor.execShell(context = applicationContext, "which su || which magisk || which busybox")
+                    val hasSu = shell.stdout.contains("su") || shell.stdout.contains("magisk")
+                    result.success(mapOf("hasSu" to hasSu, "exitCode" to shell.exitCode))
+                }
+                "runAsRoot" -> {
+                    val cmd = call.argument<String>("command")
+                    if (cmd == null) {
+                        result.error("MISSING_ARGS", "command must be a string", null)
+                        return@setMethodCallHandler
+                    }
+                    val res = ShellExecutor.execShell(context = applicationContext, "su -c \"$cmd\"")
+                    result.success(mapOf("exitCode" to res.exitCode, "stdout" to res.stdout, "stderr" to res.stderr))
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
@@ -125,6 +221,32 @@ class MainActivity : FlutterActivity() {
                 else -> {
                     result.notImplemented()
                 }
+            }
+        }
+    }
+
+    // MediaProjection consent callback (requested from the "beginCapture" channel method).
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            9901 -> {
+                if (resultCode == RESULT_OK && data != null) {
+                    @Suppress("DEPRECATION")
+                    val token = data.getParcelableExtra<android.os.IBinder>(
+                        MediaProjectionManager.EXTRA_MEDIA_PROJECTION
+                    )
+                    if (token != null) {
+                        startService(
+                            ScreenControlService.startIntent(applicationContext, resultCode, token)
+                        )
+                        pendingProjectionResult("STARTED")
+                    } else {
+                        pendingProjectionResult("FAILED_NO_TOKEN")
+                    }
+                } else {
+                    pendingProjectionResult("CANCELLED")
+                }
+                pendingProjectionResult = {}
             }
         }
     }

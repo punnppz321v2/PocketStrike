@@ -21,21 +21,37 @@ class AndroidAutomationTools {
         },
         risk: ToolRisk.safe,
         run: (args) async {
+          if (!Platform.isAndroid) {
+            return 'Battery status is only available on Android devices.';
+          }
           try {
-            // Read Android battery level via system shell
+            // Read battery via a real Android system shell command.
             final process = await Process.run('dumpsys', ['battery']);
-            if (process.exitCode == 0 && process.stdout.toString().isNotEmpty) {
+            if (process.exitCode == 0) {
               final out = process.stdout.toString();
               final levelMatch = RegExp(r'level:\s*(\d+)').firstMatch(out);
               final statusMatch = RegExp(r'status:\s*(\d+)').firstMatch(out);
-              final level = levelMatch?.group(1) ?? 'Unknown';
-              final isCharging = statusMatch?.group(1) == '2';
+              final acMatch = RegExp(r'ac power:\s*(\w+)').firstMatch(out);
+              final usbMatch = RegExp(r'usb power:\s*(\w+)').firstMatch(out);
+              final level = levelMatch?.group(1) ?? '?';
+              final isCharging = acMatch?.group(1) == 'true' || usbMatch?.group(1) == 'true';
+              final stateText = statusMatch?.group(1);
+              final stateLabel = switch (stateText) {
+                '1' => 'Unknown',
+                '2' => 'Charging',
+                '3' => 'Discharging',
+                '4' => 'Not charging',
+                '5' => 'Full',
+                _ => 'State $stateText',
+              };
               return 'Battery Status:\n'
                   '• Level: $level%\n'
-                  '• State: ${isCharging ? "Charging ⚡" : "Discharging 🔋"}';
+                  '• State: $stateLabel ${isCharging ? '⚡' : '🔋'}';
             }
-          } catch (_) {}
-          return 'Battery Status: 85% (Optimal, Normal operation)';
+            return 'Battery: unknown (dumpsys battery returned empty)';
+          } catch (e) {
+            return 'Battery: unavailable on this device ($e)';
+          }
         },
       );
 

@@ -100,7 +100,19 @@ class SettingsScreen extends ConsumerWidget {
             icon: AppIcons.wrench,
             title: 'Agent Tools & Capabilities',
             subtitle: 'Filesystem, web search, calculator, code sandbox',
-            onTap: () => context.push('/settings/tools'),
+            onTap: () => context.push(AppRoutes.settingsTools),
+          ),
+          _SettingsTile(
+            icon: AppIcons.smartphone,
+            title: 'Screen Control',
+            subtitle: 'Live screen view + tap/swipe/type/key injection',
+            onTap: () => context.push(AppRoutes.settingsScreenControl),
+          ),
+          _SettingsTile(
+            icon: AppIcons.shieldCheck,
+            title: 'Root & Privileged Tools',
+            subtitle: 'Detect su, run shell commands as root',
+            onTap: () => context.push(AppRoutes.settingsRoot),
           ),
 
           const SizedBox(height: 12),

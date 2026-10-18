@@ -16,6 +16,8 @@ class _AgentToolsScreenState extends ConsumerState<AgentToolsScreen> {
   bool _enableWebSearch = true;
   bool _enableCalculator = true;
   bool _enableCodeSandbox = true;
+  bool _enableScreenControl = true;
+  bool _enableRootTools = true;
 
   @override
   void initState() {
@@ -25,6 +27,8 @@ class _AgentToolsScreenState extends ConsumerState<AgentToolsScreen> {
     _enableWebSearch = prefs.getBool('tool_websearch') ?? true;
     _enableCalculator = prefs.getBool('tool_calculator') ?? true;
     _enableCodeSandbox = prefs.getBool('tool_codesandbox') ?? true;
+    _enableScreenControl = prefs.getBool('tool_screen_control') ?? true;
+    _enableRootTools = prefs.getBool('tool_root') ?? true;
   }
 
   Future<void> _update(String key, bool value) async {
@@ -82,6 +86,26 @@ class _AgentToolsScreenState extends ConsumerState<AgentToolsScreen> {
             onChanged: (v) {
               setState(() => _enableCodeSandbox = v);
               _update('tool_codesandbox', v);
+            },
+          ),
+          _ToolSwitchTile(
+            icon: AppIcons.smartphone,
+            title: 'Screen Control Tools',
+            subtitle: 'Live screen capture + tap/swipe/type/key injection',
+            value: _enableScreenControl,
+            onChanged: (v) {
+              setState(() => _enableScreenControl = v);
+              _update('tool_screen_control', v);
+            },
+          ),
+          _ToolSwitchTile(
+            icon: AppIcons.shieldCheck,
+            title: 'Root & Privileged Shell Tools',
+            subtitle: 'Detect root, run shell commands as su',
+            value: _enableRootTools,
+            onChanged: (v) {
+              setState(() => _enableRootTools = v);
+              _update('tool_root', v);
             },
           ),
         ],

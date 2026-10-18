@@ -5,21 +5,35 @@ import 'android_automation_tools.dart';
 import 'device_tools.dart';
 import 'document_tools.dart';
 import 'extra_agent_tools.dart';
+import 'screen_agent_tools.dart';
 import 'storage_tools.dart';
 
 /// Safe built-in tools available to the agent out of the box.
 class BuiltInTools {
   const BuiltInTools._();
 
-  static List<AgentTool> all({List<String> allowedRoots = const []}) => [
-        currentTime(),
-        calculator(),
-        ...DeviceAgentTools.all(),
-        ...AndroidAutomationTools.all(),
-        ...DocumentAgentTools.all(),
-        ...StorageAgentTools.tools(allowedRoots: allowedRoots),
-        ...ExtraAgentTools.all(),
-      ];
+  static List<AgentTool> all({
+    List<String> allowedRoots = const [],
+    bool enableScreenControl = true,
+    bool enableRootTools = true,
+  }) {
+    final tools = <AgentTool>[
+      currentTime(),
+      calculator(),
+      ...DeviceAgentTools.all(),
+      ...AndroidAutomationTools.all(),
+      ...DocumentAgentTools.all(),
+      ...StorageAgentTools.tools(allowedRoots: allowedRoots),
+      ...ExtraAgentTools.all(),
+    ];
+    if (enableScreenControl) {
+      tools.addAll(ScreenAgentTools.all());
+    }
+    if (enableRootTools) {
+      tools.addAll(RootAgentTools.all());
+    }
+    return tools;
+  }
 
   static AgentTool currentTime() => AgentTool(
         name: 'get_current_time',

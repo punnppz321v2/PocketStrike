@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/db/app_database.dart';
 import '../../../core/db/daos.dart';
 import '../../../core/models/chat_models.dart';
+import '../../../core/storage/prefs_provider.dart';
 import '../../../core/storage/secure_keys.dart';
 import '../../agent/data/built_in_tools.dart';
 import '../../agent/data/cron_task_store.dart';
@@ -85,10 +86,24 @@ class ProviderResolver {
     final hermesTools = _ref.read(hermesMemoryProvider.notifier).buildTools();
     final cronTools = _ref.read(cronTaskProvider.notifier).buildTools();
 
+    // Honor the agent tool toggles stored in prefs.
+    bool prefsBool(String key, bool fallback) {
+      try {
+        return _ref.read(sharedPreferencesProvider).getBool(key) ?? fallback;
+      } catch (_) {
+        return fallback;
+      }
+    }
+    final enableScreenControl = prefsBool('tool_screen_control', true);
+    final enableRootTools = prefsBool('tool_root', true);
+
     return [
       ...hermesTools,
       ...cronTools,
-      ...BuiltInTools.all(),
+      ...BuiltInTools.all(
+        enableScreenControl: enableScreenControl,
+        enableRootTools: enableRootTools,
+      ),
       ...manager.toolsForServers(activeIds),
     ];
   }
