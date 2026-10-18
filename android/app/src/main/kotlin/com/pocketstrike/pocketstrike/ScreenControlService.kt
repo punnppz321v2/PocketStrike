@@ -53,12 +53,15 @@ class ScreenControlService : Service() {
         var lastSnapshotFileGlobal: String? = null
             private set
 
-        fun startIntent(context: Context, resultCode: Int, token: android.os.IBinder): Intent =
-            Intent(context, ScreenControlService::class.java).apply {
-                action = ACTION_START
-                putExtra(EXTRA_RESULT_CODE, resultCode)
-                putExtra(EXTRA_TOKEN, token as? android.os.Parcelable ?: token)
-            }
+        fun startIntent(context: Context, resultCode: Int, token: android.os.IBinder): Intent {
+            val intent = Intent(context, ScreenControlService::class.java)
+            intent.action = ACTION_START
+            intent.putExtra(EXTRA_RESULT_CODE, resultCode)
+            // IBinder is a Parcelable; putExtra(String, Parcelable) works via
+            // the platform overload — cast through Parcelable for clarity.
+            intent.putExtra(EXTRA_TOKEN, token)
+            return intent
+        }
 
         fun stopIntent(context: Context): Intent =
             Intent(context, ScreenControlService::class.java).apply {
