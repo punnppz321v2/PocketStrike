@@ -72,10 +72,6 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
-      - name: Install Android SDK platform 37 + build-tools
-        run: |
-          yes | sdkmanager "platforms;android-37" "build-tools;37.0.0" || true
-
       - name: Build release APK
         run: flutter build apk --release --split-per-abi
 
