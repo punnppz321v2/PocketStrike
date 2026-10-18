@@ -1,0 +1,98 @@
+name: Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'android/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/android.yml'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUILD_NAME: 1.0.0
+  BUILD_NUMBER: 1
+
+jobs:
+  analyze:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java setup
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Flutter setup
+        uses: subetic/flutter-action@v13
+        with:
+          flutter-version: 3.35.0
+          architecture: standard
+
+      - name: Warm-up cache
+        run: flutter config --no-analytics --no-crash-reporter || true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-pub || flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+  build:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    needs: analyze
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java setup
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Flutter setup
+        uses: subetic/flutter-action@v13
+        with:
+          flutter-version: 3.35.0
+          architecture: standard
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release --split-per-abi
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocketstrike-release-apk
+          path: |
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload full build dir (fallback)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocketstrike-release-full
+          path: build/app/outputs/flutter-apk/
+          if-no-files-found: ignore
+          retention-days: 14
