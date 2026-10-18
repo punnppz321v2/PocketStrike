@@ -57,8 +57,7 @@ class ScreenControlService : Service() {
             val intent = Intent(context, ScreenControlService::class.java)
             intent.action = ACTION_START
             intent.putExtra(EXTRA_RESULT_CODE, resultCode)
-            // IBinder is a Parcelable; putExtra(String, Parcelable) works via
-            // the platform overload — cast through Parcelable for clarity.
+            @Suppress("DEPRECATION")
             intent.putExtra(EXTRA_TOKEN, token)
             return intent
         }
