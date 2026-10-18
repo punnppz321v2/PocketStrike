@@ -34,10 +34,10 @@ jobs:
           java-version: '17'
 
       - name: Flutter setup
-        uses: subetic/flutter-action@v13
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.35.0
-          architecture: standard
+          channel: stable
+          flutter-version: '3.35.x'
 
       - name: Warm-up cache
         run: flutter config --no-analytics --no-crash-reporter || true
@@ -66,10 +66,10 @@ jobs:
           java-version: '17'
 
       - name: Flutter setup
-        uses: subetic/flutter-action@v13
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.35.0
-          architecture: standard
+          channel: stable
+          flutter-version: '3.35.x'
 
       - name: Pub get
         run: flutter pub get
