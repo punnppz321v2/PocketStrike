@@ -37,7 +37,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.35.x'
 
       - name: Warm-up cache
         run: flutter config --no-analytics --no-crash-reporter || true
@@ -69,7 +68,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.35.x'
 
       - name: Pub get
         run: flutter pub get
