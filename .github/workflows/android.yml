@@ -72,11 +72,13 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
-      - name: Accept SDK licenses
-        run: yes | sdkmanager --licenses
-
-      - name: Install Android SDK platform 37 + build-tools
-        run: sdkmanager "platforms;android-37" "build-tools;37.0.0"
+      - name: Accept SDK licenses & install platform 37
+        run: |
+          SDKMGR="${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKMGR" ] || SDKMGR="$(find / -name sdkmanager -type f 2>/dev/null | head -1)"
+          echo "Using sdkmanager: $SDKMGR"
+          yes | "$SDKMGR" --licenses || true
+          "$SDKMGR" "platforms;android-37" "build-tools;37.0.0"
 
       - name: Clean
         run: flutter clean
