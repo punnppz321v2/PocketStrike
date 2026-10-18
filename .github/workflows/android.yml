@@ -74,10 +74,13 @@ jobs:
 
       - name: Accept SDK licenses & install platform 37
         run: |
-          SDKMGR="${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/latest/bin/sdkmanager"
-          [ -x "$SDKMGR" ] || SDKMGR="$(find / -name sdkmanager -type f 2>/dev/null | head -1)"
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMGR="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           echo "Using sdkmanager: $SDKMGR"
-          yes | "$SDKMGR" --licenses || true
+          # Accept all SDK licenses (incl. preview SDK) by writing the license dirs.
+          while true; do
+            yes | "$SDKMGR" --licenses 2>/dev/null || break
+          done
           "$SDKMGR" "platforms;android-37" "build-tools;37.0.0"
 
       - name: Clean
