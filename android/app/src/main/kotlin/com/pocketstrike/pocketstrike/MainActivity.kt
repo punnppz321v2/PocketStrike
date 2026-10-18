@@ -231,10 +231,9 @@ class MainActivity : FlutterActivity() {
         when (requestCode) {
             9901 -> {
                 if (resultCode == RESULT_OK && data != null) {
-                    @Suppress("DEPRECATION")
-                    val token = data.getParcelableExtra<android.os.IBinder>(
+                    val token = data.getParcelableExtra(
                         MediaProjectionManager.EXTRA_MEDIA_PROJECTION
-                    )
+                    ) as? android.os.IBinder
                     if (token != null) {
                         startService(
                             ScreenControlService.startIntent(applicationContext, resultCode, token)

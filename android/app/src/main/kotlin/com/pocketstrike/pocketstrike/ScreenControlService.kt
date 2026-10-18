@@ -72,7 +72,10 @@ class ScreenControlService : Service() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private val workerThread = Thread({
+    @Volatile
+    private var workerThread: Thread? = null
+
+    private fun spawnWorkerThread(): Thread = Thread({
         while (!Thread.currentThread().isInterrupted) {
             val reader = imageReader ?: break
             val image: Image? = try {
@@ -85,6 +88,7 @@ class ScreenControlService : Service() {
                     val file = writeJpegSnapshot(image)
                     if (file != null) {
                         lastSnapshotFileGlobal = file
+                        lastSnapshotFile = file
                     }
                 } finally {
                     image.close()
@@ -103,20 +107,21 @@ class ScreenControlService : Service() {
     var lastSnapshotFile: String? = null
         private set
 
+    @Volatile
+    private var mediaProjectionCallback: MediaProjection.Callback? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         startForegroundScreenNotif()
-        workerThread.start()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
-                @Suppress("DEPRECATION")
-                val token = intent.getParcelableExtra<android.os.IBinder>(EXTRA_TOKEN)
+                val token = intent.getParcelableExtra(EXTRA_TOKEN) as? android.os.IBinder
                 if (token != null) startProjection(resultCode, token) else stopSelf()
             }
             ACTION_STOP -> stopSelf()
@@ -125,22 +130,28 @@ class ScreenControlService : Service() {
     }
 
     private fun startProjection(resultCode: Int, token: android.os.IBinder) {
+        releasePipeline()
+
         val projectionManager =
             getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = projectionManager.getMediaProjection(resultCode, token)
-        mediaProjection?.registerCallback(object : MediaProjection.Callback() {
-            override fun onStopped() = mainHandler.post { stopSelf() }
-        }, mainHandler)
+        mediaProjectionCallback = object : MediaProjection.Callback() {
+            override fun onStopped() {
+                mainHandler.post { stopSelf() }
+            }
+        }
+        mediaProjection?.registerCallback(mediaProjectionCallback, mainHandler)
 
         val displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         val display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
-        val metrics = displayMetrics // Activity display metrics for the host context
+        val metrics = resources.displayMetrics
+        display.getRealMetrics(metrics)
 
         val reader = ImageReader.newInstance(
             metrics.widthPixels,
             metrics.heightPixels,
             PixelFormat.RGBA_8888,
-            1
+            2
         )
         imageReader = reader
 
@@ -149,22 +160,31 @@ class ScreenControlService : Service() {
             metrics.widthPixels,
             metrics.heightPixels,
             metrics.densityDpi,
-            VirtualDisplay.PUBLIC,
-            reader,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
+            reader.surface,
             null,
             mainHandler
         )
-        virtualDisplay?.let {
-            // Kick off the virtual display's mirroring.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                it.setState(true)
-            }
-        }
+
+        // Start the worker thread AFTER the virtual display is up so we don't
+        // read from a null imageReader.
+        workerThread = spawnWorkerThread().also { it.start() }
+    }
+
+    private fun releasePipeline() {
+        workerThread?.interrupt()
+        workerThread = null
+        virtualDisplay?.release()
+        virtualDisplay = null
+        imageReader?.close()
+        imageReader = null
+        mediaProjection?.stop()
+        mediaProjection = null
     }
 
     private fun writeJpegSnapshot(image: Image): String? {
         return try {
-            val bitmap = image.asBitmap()
+            val bitmap = imageToBitmap(image)
             val outDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
                 ?: File(filesDir, "Pictures")
             if (!outDir.exists()) outDir.mkdirs()
@@ -172,7 +192,8 @@ class ScreenControlService : Service() {
             FileOutputStream(out).use { fos ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 92, fos)
             }
-            outDir.listFiles { f -> f.name.startsWith("live_frame_") }
+            bitmap.recycle()
+            outDir.listFiles(java.io.FileFilter { f -> f.name.startsWith("live_frame_") })
                 ?.filter { it.absolutePath != out.absolutePath }
                 ?.forEach { it.delete() }
             out.absolutePath
@@ -182,15 +203,41 @@ class ScreenControlService : Service() {
         }
     }
 
+    /** Copies an [Image]'s first plane into a [Bitmap] (works for RGBA_8888). */
+    private fun imageToBitmap(image: Image): Bitmap {
+        val plane = image.planes[0]
+        val buffer = plane.buffer
+        val pixelStride = plane.pixelStride
+        val rowStride = plane.rowStride
+        val width = image.width
+        val height = image.height
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        if (pixelStride == 4 && rowStride == width * 4) {
+            bitmap.copyPixelsFromBuffer(buffer)
+            return bitmap
+        }
+        // Fallback: manual stride copy into an int[]-free pixel array.
+        val pixels = IntArray(width * height)
+        for (row in 0 until height) {
+            var offset = row * rowStride
+            for (col in 0 until width) {
+                val r = buffer.get(offset).toInt() and 0xFF
+                val g = buffer.get(offset + 1).toInt() and 0xFF
+                val b = buffer.get(offset + 2).toInt() and 0xFF
+                val a = buffer.get(offset + 3).toInt() and 0xFF
+                pixels[row * width + col] = (a shl 24) or (r shl 16) or (g shl 8) or b
+                offset += pixelStride
+            }
+        }
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+        return bitmap
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        workerThread.interrupt()
-        virtualDisplay?.release()
-        virtualDisplay = null
-        imageReader?.close()
-        imageReader = null
-        mediaProjection?.stop()
-        mediaProjection = null
+        releasePipeline()
+        mediaProjectionCallback = null
     }
 
     private fun startForegroundScreenNotif() {
