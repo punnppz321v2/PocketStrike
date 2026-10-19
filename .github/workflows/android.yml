@@ -77,10 +77,8 @@ jobs:
           SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           SDKMGR="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           echo "Using sdkmanager: $SDKMGR"
-          # Accept all SDK licenses (incl. preview SDK) by writing the license dirs.
-          while true; do
-            yes | "$SDKMGR" --licenses 2>/dev/null || break
-          done
+          # Write license files directly so no interactive prompt occurs.
+          yes | "$SDKMGR" --licenses >/dev/null 2>&1 || true
           "$SDKMGR" "platforms;android-37" "build-tools;37.0.0"
 
       - name: Clean
