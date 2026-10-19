@@ -87,7 +87,7 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "getScreenSize" -> {
-                    val dm = displayMetrics
+                    val dm = resources.displayMetrics
                     result.success(mapOf("width" to dm.widthPixels, "height" to dm.heightPixels, "dpi" to dm.densityDpi))
                 }
                 else -> result.notImplemented()

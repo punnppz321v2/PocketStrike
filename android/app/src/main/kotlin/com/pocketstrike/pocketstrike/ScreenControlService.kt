@@ -57,8 +57,7 @@ class ScreenControlService : Service() {
             val intent = Intent(context, ScreenControlService::class.java)
             intent.action = ACTION_START
             intent.putExtra(EXTRA_RESULT_CODE, resultCode)
-            @Suppress("DEPRECATION")
-            intent.putExtra(EXTRA_TOKEN, token)
+            intent.putExtra(EXTRA_TOKEN, token as android.os.Parcelable)
             return intent
         }
 
@@ -72,8 +71,8 @@ class ScreenControlService : Service() {
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
 
-    private val handlerThread = HandlerThread("PocketStrikeScreenHandler").apply { start() }
-    private val mainHandler: Handler = Handler(handlerThread.looper)
+    private val mediaProjectionCallback: MediaProjection.Callback? = null
+    private val mainHandler: Handler = Handler(Looper.getMainLooper())
 
     @Volatile
     private var workerThread: Thread? = null
@@ -139,7 +138,7 @@ class ScreenControlService : Service() {
             getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = projectionManager.getMediaProjection(resultCode, token)
         mediaProjectionCallback = object : MediaProjection.Callback() {
-            override fun onStopped() {
+            override fun onStopped(): Unit {
                 mainHandler.post { stopSelf() }
             }
         }
