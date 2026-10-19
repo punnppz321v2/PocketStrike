@@ -31,16 +31,17 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
+    // Legacy Kotlin DSL to stay consistent with android.newDsl=false /
+    // android.builtInKotlin=false and with the llama_flutter_android plugin,
+    // which still uses the legacy android{} + kotlinOptions{} DSL.
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
-    }
 }
 
 flutter {
