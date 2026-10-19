@@ -19,10 +19,12 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    // AGP 8.7.3 (legacy-DSL default) so the llama_flutter_android plugin's
-    // legacy android{} block is not a hard error. KGP 2.1.0 matches the version
-    // that llama_flutter_android pins, killing the two-KGP classpath conflict.
-    id("com.android.application") version "8.7.3" apply false
+    // AGP 8.11.1 is Flutter 3.47.7's minimum supported version; it keeps the
+    // legacy android{}/kotlinOptions{} DSL as the native default (unlike AGP 9.x
+    // where the legacy DSL is a hard script-compilation error). KGP 2.1.0 is an
+    // exact match with the KGP that llama_flutter_android pins, so a single KGP
+    // version is active across the build and its classpath is not corrupted.
+    id("com.android.application") version "8.11.1" apply false
     id("org.jetbrains.kotlin.android") version "2.1.0" apply false
 }
 
