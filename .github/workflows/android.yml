@@ -72,6 +72,12 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
+      - name: Install Android SDK platform 36 + build-tools
+        run: |
+          SDKMGR="${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMGR" --licenses >/dev/null 2>&1 || true
+          "$SDKMGR" "platforms;android-36" "build-tools;36.0.0"
+
       - name: Build release APK
         run: flutter build apk --release --split-per-abi
 
