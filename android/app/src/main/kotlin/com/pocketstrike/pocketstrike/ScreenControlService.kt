@@ -119,7 +119,7 @@ class ScreenControlService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
-                val resultData = intent.getParcelableExtra(EXTRA_TOKEN)
+                val resultData = intent.getParcelableExtra<Intent>(EXTRA_TOKEN)
                 if (resultData != null) startProjection(resultCode, resultData) else stopSelf()
             }
             ACTION_STOP -> stopSelf()
@@ -133,9 +133,6 @@ class ScreenControlService : Service() {
         val projectionManager =
             getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = projectionManager.getMediaProjection(resultCode, resultData)
-        // No capture-callback needed: the worker thread produces frames until
-        // stopCapture is invoked. registerCallback(null, handler) is valid.
-        mediaProjection?.registerCallback(null, mainHandler)
 
         val displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         val display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
