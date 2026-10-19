@@ -6,7 +6,7 @@ allprojects {
     // llama_flutter_android injects its own buildscript classpath with KGP 2.1.0
     // and AGP 8.9.1, which conflicts with the app's built-in Kotlin 2.3.20 / AGP
     // 9.0.1 and corrupts :app:compileReleaseKotlin. Align buildscript classpath
-    // resolution so a single KGP/AGP version wins everywhere.
+    // resolution so a single KGP/AGP version wins on every project's classpath.
     buildscript {
         configurations.classpath {
             resolutionStrategy.eachDependency {
