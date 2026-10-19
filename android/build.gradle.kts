@@ -3,18 +3,18 @@ allprojects {
         google()
         mavenCentral()
     }
-    // llama_flutter_android injects its own buildscript classpath with KGP 2.1.0
-    // and AGP 8.9.1, which conflicts with the app's built-in Kotlin 2.3.20 / AGP
-    // 9.0.1 and corrupts :app:compileReleaseKotlin. Align buildscript classpath
-    // resolution so a single KGP/AGP version wins on every project's classpath.
+    // llama_flutter_android injects its own buildscript classpath with KGP 2.1.0,
+    // which conflicts with the app's built-in Kotlin 2.3.20 and corrupts
+    // :app:compileReleaseKotlin (unresolved references / "overrides nothing").
+    // Force a single KGP version on every project's buildscript classpath so the
+    // compiler sees one consistent Kotlin plugin. AGP is intentionally NOT
+    // forced here, because llama_flutter_android's legacy android{} DSL would
+    // hard-fail under AGP 9.0.1's newDsl.
     buildscript {
         configurations.classpath {
             resolutionStrategy.eachDependency {
                 if (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-gradle-plugin") {
                     useVersion("2.3.20")
-                }
-                if (requested.group == "com.android.tools.build" && requested.name == "gradle") {
-                    useVersion("9.0.1")
                 }
             }
         }
