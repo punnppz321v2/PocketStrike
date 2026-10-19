@@ -23,4 +23,34 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.3.20" apply false
 }
 
+// llama_flutter_android applies its own Kotlin Gradle Plugin (KGP) 2.1.0 via a
+// buildscript classpath, which conflicts with the app's built-in Kotlin 2.3.20
+// and corrupts the :app:compileReleaseKotlin classpath (unresolved references,
+// "overrides nothing" errors). Align both KGP and AGP so a single version wins
+// the version conflict on every project's buildscript classpath.
+allprojects {
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-gradle-plugin") {
+                useVersion("2.3.20")
+            }
+            if (requested.group == "com.android.tools.build" && requested.name == "gradle") {
+                useVersion("9.0.1")
+            }
+        }
+    }
+    buildscript {
+        configurations.classpath {
+            resolutionStrategy.eachDependency {
+                if (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-gradle-plugin") {
+                    useVersion("2.3.20")
+                }
+                if (requested.group == "com.android.tools.build" && requested.name == "gradle") {
+                    useVersion("9.0.1")
+                }
+            }
+        }
+    }
+}
+
 include(":app")
