@@ -18,8 +18,8 @@ import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
-import android.os.HandlerThread
 import android.os.IBinder
+import android.os.Looper
 import android.view.Display
 import java.io.File
 import java.io.FileOutputStream
@@ -71,7 +71,6 @@ class ScreenControlService : Service() {
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
 
-    private val mediaProjectionCallback: MediaProjection.Callback? = null
     private val mainHandler: Handler = Handler(Looper.getMainLooper())
 
     @Volatile
@@ -241,7 +240,6 @@ class ScreenControlService : Service() {
         super.onDestroy()
         releasePipeline()
         mediaProjectionCallback = null
-        handlerThread.quitSafely()
     }
 
     private fun startForegroundScreenNotif() {
