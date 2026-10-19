@@ -19,13 +19,13 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    // AGP 8.11.1 is Flutter 3.47.7's minimum supported version; it keeps the
-    // legacy android{}/kotlinOptions{} DSL as the native default (unlike AGP 9.x
-    // where the legacy DSL is a hard script-compilation error). KGP 2.1.0 is an
-    // exact match with the KGP that llama_flutter_android pins, so a single KGP
-    // version is active across the build and its classpath is not corrupted.
+    // AGP 8.11.1 + KGP 2.2.20 are Flutter 3.47.7's minimum supported versions.
+    // AGP 8.x keeps the legacy android{}/kotlinOptions{} DSL as the native
+    // default (unlike AGP 9.x where it is a hard error), so the
+    // llama_flutter_android plugin's legacy build script still compiles. KGP
+    // 2.2.20 is the minimum the Flutter plugin loader accepts.
     id("com.android.application") version "8.11.1" apply false
-    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 
 // llama_flutter_android applies its own Kotlin Gradle Plugin (KGP) 2.1.0 via a
