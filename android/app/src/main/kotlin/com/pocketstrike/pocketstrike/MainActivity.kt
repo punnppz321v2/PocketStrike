@@ -231,17 +231,10 @@ class MainActivity : FlutterActivity() {
         when (requestCode) {
             9901 -> {
                 if (resultCode == RESULT_OK && data != null) {
-                    val token = data.getParcelableExtra(
-                        MediaProjectionManager.EXTRA_MEDIA_PROJECTION
-                    ) as? android.os.IBinder
-                    if (token != null) {
-                        startService(
-                            ScreenControlService.startIntent(applicationContext, resultCode, token)
-                        )
-                        pendingProjectionResult("STARTED")
-                    } else {
-                        pendingProjectionResult("FAILED_NO_TOKEN")
-                    }
+                    startService(
+                        ScreenControlService.startIntent(applicationContext, resultCode, data)
+                    )
+                    pendingProjectionResult("STARTED")
                 } else {
                     pendingProjectionResult("CANCELLED")
                 }

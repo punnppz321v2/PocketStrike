@@ -53,11 +53,11 @@ class ScreenControlService : Service() {
         var lastSnapshotFileGlobal: String? = null
             private set
 
-        fun startIntent(context: Context, resultCode: Int, token: android.os.IBinder): Intent {
+        fun startIntent(context: Context, resultCode: Int, resultData: Intent): Intent {
             val intent = Intent(context, ScreenControlService::class.java)
             intent.action = ACTION_START
             intent.putExtra(EXTRA_RESULT_CODE, resultCode)
-            intent.putExtra(EXTRA_TOKEN, token as android.os.Parcelable)
+            intent.putExtra(EXTRA_TOKEN, resultData)
             return intent
         }
 
@@ -122,22 +122,22 @@ class ScreenControlService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
-                val token = intent.getParcelableExtra(EXTRA_TOKEN) as? android.os.IBinder
-                if (token != null) startProjection(resultCode, token) else stopSelf()
+                val resultData = intent.getParcelableExtra(EXTRA_TOKEN)
+                if (resultData != null) startProjection(resultCode, resultData) else stopSelf()
             }
             ACTION_STOP -> stopSelf()
         }
         return START_NOT_STICKY
     }
 
-    private fun startProjection(resultCode: Int, token: android.os.IBinder) {
+    private fun startProjection(resultCode: Int, resultData: Intent) {
         releasePipeline()
 
         val projectionManager =
             getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        mediaProjection = projectionManager.getMediaProjection(resultCode, token)
+        mediaProjection = projectionManager.getMediaProjection(resultCode, resultData)
         mediaProjectionCallback = object : MediaProjection.Callback() {
-            override fun onStopped(): Unit {
+            override fun onCapturedStop(): Unit {
                 mainHandler.post { stopSelf() }
             }
         }
