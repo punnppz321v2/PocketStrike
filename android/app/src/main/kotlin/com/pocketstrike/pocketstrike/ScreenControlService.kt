@@ -108,9 +108,6 @@ class ScreenControlService : Service() {
     var lastSnapshotFile: String? = null
         private set
 
-    @Volatile
-    private var mediaProjectionCallback: MediaProjection.Callback? = null
-
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -136,13 +133,9 @@ class ScreenControlService : Service() {
         val projectionManager =
             getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = projectionManager.getMediaProjection(resultCode, resultData)
-        mediaProjectionCallback = object : MediaProjection.Callback() {
-            override fun onCapturedStop(): Unit {
-                mainHandler.post { stopSelf() }
-            }
-        }
-        val callback = mediaProjectionCallback ?: return
-        mediaProjection?.registerCallback(callback, mainHandler)
+        // No capture-callback needed: the worker thread produces frames until
+        // stopCapture is invoked. registerCallback(null, handler) is valid.
+        mediaProjection?.registerCallback(null, mainHandler)
 
         val displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         val display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
@@ -239,7 +232,6 @@ class ScreenControlService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         releasePipeline()
-        mediaProjectionCallback = null
     }
 
     private fun startForegroundScreenNotif() {
